@@ -77,15 +77,15 @@ if page == pages[2] :
     # =========================
     @st.cache_resource
     def load_models():
-        sbert_model = SentenceTransformer("../models/sentence_bert")
-        kmeans = joblib.load("../models/kmeans_topics.pkl")
-        cluster_labels = joblib.load("../models/cluster_labels.pkl")
+        sbert_model = SentenceTransformer("streamlit/models/sentence_bert")
+        kmeans = joblib.load("streamlit/models/kmeans_topics.pkl")
+        cluster_labels = joblib.load("streamlit/models/cluster_labels.pkl")
 
         sentiment_model = TFDistilBertForSequenceClassification.from_pretrained(
-            "../models/distilbert_sentiment"
+            "streamlit/models/distilbert_sentiment"
         )
         sentiment_tokenizer = DistilBertTokenizerFast.from_pretrained(
-            "../models/distilbert_sentiment"
+            "streamlit/models/distilbert_sentiment"
         )
 
         return sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer
