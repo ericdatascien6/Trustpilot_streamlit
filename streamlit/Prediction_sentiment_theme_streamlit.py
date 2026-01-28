@@ -33,13 +33,13 @@ if page == pages[0]:
 
     # Répartition des sentiments
     st.image(
-        "images/repartition_sentiments.png",
+        "streamlit/images/repartition_sentiments.png",
         caption="Repartition des sentiments",
         use_container_width=True
     )
     # WordCloud
     st.image(
-        "images/wordcloud.png",
+        "streamlit/images/wordcloud.png",
         caption="Wordcloud – Corpus global",
         use_container_width=True
     )
