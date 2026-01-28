@@ -15,7 +15,7 @@ page=st.sidebar.radio("Aller vers", pages)
 @st.cache_data
 def load_dataset():
     df = pd.read_csv(
-        "train.csv",
+        "streamlit/train.csv",
         header=None,
         names=["label", "title", "text"]
     )
