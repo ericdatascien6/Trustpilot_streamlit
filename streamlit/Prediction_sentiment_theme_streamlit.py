@@ -1,12 +1,20 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
+from pathlib import Path
 
 
 st.title("Projet Amazon Trustpilot")
 st.sidebar.title("Sommaire")
-pages=["Exploration", "Preprocessing", "Modélisation"]
-page=st.sidebar.radio("Aller vers", pages)
+pages = ["Exploration", "Preprocessing", "Modélisation"]
+page = st.sidebar.radio("Aller vers", pages)
+
+
+##############################################################
+# Chemins robustes
+BASE_DIR = Path(__file__).resolve().parent.parent
+STREAMLIT_DIR = BASE_DIR / "streamlit"
+IMAGES_DIR = STREAMLIT_DIR / "images"
 
 
 ##############################################################
@@ -15,7 +23,7 @@ page=st.sidebar.radio("Aller vers", pages)
 @st.cache_data
 def load_dataset():
     df = pd.read_csv(
-        "streamlit/train.csv",
+        STREAMLIT_DIR / "train.csv",
         header=None,
         names=["label", "title", "text"]
     )
@@ -33,63 +41,72 @@ if page == pages[0]:
 
     # Répartition des sentiments
     st.image(
-        "streamlit/images/repartition_sentiments.png",
-        caption="Repartition des sentiments",
+        IMAGES_DIR / "repartition_sentiments.png",
+        caption="Répartition des sentiments",
         use_container_width=True
     )
+
     # WordCloud
     st.image(
-        "streamlit/images/wordcloud.png",
+        IMAGES_DIR / "wordcloud.png",
         caption="Wordcloud – Corpus global",
         use_container_width=True
     )
 
 
-
-
-
 #############################################################
-if page == pages[1] : 
+if page == pages[1]:
     st.write("### Preprocessing")
 
 
-
 #############################################################
-if page == pages[2] : 
+if page == pages[2]:
     st.write("### Modélisation")
 
     ###########################################################################
-    #   Prédiction du sentiment et du thème - 
+    #   Prédiction du sentiment et du thème
     ###########################################################################
-    import numpy as np
     import tensorflow as tf
     import joblib
     from transformers import (
-        TFDistilBertForSequenceClassification,
-        DistilBertTokenizerFast
+        AutoTokenizer,
+        TFAutoModelForSequenceClassification
     )
     from sentence_transformers import SentenceTransformer
 
 
+    # =========================
+    # Chargement des modèles
+    # =========================
+    MODELS_DIR = BASE_DIR / "models"
 
-    # =========================
-    # Rechargement modèles
-    # =========================
     @st.cache_resource
     def load_models():
-        sbert_model = SentenceTransformer("streamlit/models/sentence_bert")
-        kmeans = joblib.load("streamlit/models/kmeans_topics.pkl")
-        cluster_labels = joblib.load("streamlit/models/cluster_labels.pkl")
-
-        sentiment_model = TFDistilBertForSequenceClassification.from_pretrained(
-            "streamlit/models/distilbert_sentiment"
-        )
-        sentiment_tokenizer = DistilBertTokenizerFast.from_pretrained(
-            "streamlit/models/distilbert_sentiment"
+        # Sentence-BERT (chargé depuis Hugging Face)
+        sbert_model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L6-v2"
         )
 
-        return sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer
-    
+        # KMeans + labels (modèles entraînés)
+        kmeans = joblib.load(MODELS_DIR / "kmeans_topics.pkl")
+        cluster_labels = joblib.load(MODELS_DIR / "cluster_labels.pkl")
+
+        # DistilBERT sentiment (modèle HF standard)
+        sentiment_model_name = "distilbert-base-uncased-finetuned-sst-2-english"
+        sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_model_name)
+        sentiment_model = TFAutoModelForSequenceClassification.from_pretrained(
+            sentiment_model_name
+        )
+
+        return (
+            sbert_model,
+            kmeans,
+            cluster_labels,
+            sentiment_model,
+            sentiment_tokenizer
+        )
+
+
     sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer = load_models()
 
 
@@ -127,24 +144,26 @@ if page == pages[2] :
 
 
     # =========================
-    # Test 1 reviews personnalisée
+    # Test 1 review personnalisée
     # =========================
     review = "The movie stopped working after two weeks and feels very cheap."
 
     result = predict_review(review)
 
-    st.markdown(f"### 📝 Avis rédigé")
+    st.markdown("### 📝 Avis rédigé")
     st.success(review)
-    st.write(f"Thème :", result["theme"])
-    st.write(f"Sentiment : {result['sentiment']}  ---   (Score = {result['sentiment_score']})")
-    
-    
+    st.write("Thème :", result["theme"])
+    st.write(
+        f"Sentiment : {result['sentiment']}  ---   "
+        f"(Score = {result['sentiment_score']:.3f})"
+    )
+
 
     # =========================
     # Test de reviews du dataset
     # =========================
-    # Sélection aléatoire de 5 avis positifs et 5 avis négatifs
     random_state = 43
+
     def safe_sample(df, n, random_state):
         if len(df) == 0:
             return pd.DataFrame(columns=df.columns)
@@ -156,21 +175,17 @@ if page == pages[2] :
     neg_samples = safe_sample(df_negative, 5, random_state)[["text", "label"]]
     pos_samples = safe_sample(df_positive, 5, random_state)[["text", "label"]]
 
-
-    # Dataset de test final (mélangé)
     test_df = (
         pd.concat([neg_samples, pos_samples])
         .sample(frac=1, random_state=random_state)
         .reset_index(drop=True)
     )
 
-    # Correspondance labels
     label_mapping = {
         1: "Negative",
         2: "Positive"
     }
 
-    # Prédictions
     for i, row in test_df.iterrows():
         review_text = row["text"]
         true_label = label_mapping[row["label"]]
@@ -188,4 +203,3 @@ if page == pages[2] :
         st.write(f"→ Thème prédit     : **{result['theme']}**")
 
         st.divider()
-
