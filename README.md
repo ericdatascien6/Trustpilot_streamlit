@@ -1,8 +1,9 @@
 # Projet Amazon Trustpilot — NLP, Modélisation & Streamlit
 
 ## 🔗 Application en ligne
-👉 Accéder à l’application Streamlit :  
-https://trustpilotapp.streamlit.app
+👉 Accéder à l’application Streamlit : 
+https://trustpilotapp-aeaia97rx7piuhlppj7aun.streamlit.app/ 
+
 
 Cette application permet d’explorer, analyser et prédire automatiquement :
 - le **sentiment** d’un avis client (positif / négatif)
