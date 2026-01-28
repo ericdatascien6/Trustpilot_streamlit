@@ -11,6 +11,7 @@ page=st.sidebar.radio("Aller vers", pages)
 
 ##############################################################
 # Chargement du dataset
+'''
 @st.cache_data
 def load_dataset():
     df = pd.read_csv(
@@ -25,7 +26,7 @@ def load_dataset():
 
 
 df, df_negative, df_positive = load_dataset()
-
+'''
 
 ##############################################################
 if page == pages[0]:
