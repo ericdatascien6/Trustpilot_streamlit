@@ -4,9 +4,9 @@ import numpy as np
 from pathlib import Path
 
 
-st.title("Projet Amazon Trustpilot")
+st.title("Projet Amazon Reviews Trustpilot")
 st.sidebar.title("Sommaire")
-pages = ["Exploration", "Preprocessing", "Modélisation"]
+pages = ["Exploration", "Interprétabilité", "Modélisation"]
 page = st.sidebar.radio("Aller vers", pages)
 
 
@@ -38,39 +38,152 @@ df, df_negative, df_positive = load_dataset()
 
 ##############################################################
 if page == pages[0]:
+    st.write("### Exploration")
 
     # Répartition des sentiments
+    st.markdown("### 📊 Equilibre de la target")
     st.image(
         IMAGES_DIR / "repartition_sentiments.png",
-        caption="Répartition des sentiments",
+        use_container_width=True
+    )
+    
+    st.divider()
+
+    # Boxplot longueur des avis
+    st.markdown("### 📊 Longueur des avis")
+    st.image(
+        IMAGES_DIR / "boxplot_longueur_avis.png",
         use_container_width=True
     )
 
-    # Boxplot longueur des avis
+    st.divider()    
+
+    # Boxplot longueur des avis par sentiment
     st.image(
-        IMAGES_DIR / "boxplot_longueur_avis1.png",
-        caption="Boxplot longueur des avis",
+        IMAGES_DIR / "boxplot_longueur_avis_par_sentiment.png",
         use_container_width=True
     )
+
+    st.divider()    
 
     # Countplot longueur des avis
     st.image(
-        IMAGES_DIR / "countplot_longueur_avis1.png",
+        IMAGES_DIR / "countplot_longueur_avis.png",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # Countplot longueur des avis positifs
+    st.image(
+        IMAGES_DIR / "countplot_longueur_avis_positive.png",
+        caption="Distribution longueur des avis positifs",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # Countplot longueur des avis négatifs
+    st.image(
+        IMAGES_DIR / "countplot_longueur_avis_negative.png",
+        caption="Distribution longueur des avis négatifs",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # Violinplot longueur des avis positifs et negatifs
+    st.image(
+        IMAGES_DIR / "violinplot_longueur_avis.png",
         caption="Distribution longueur des avis",
         use_container_width=True
     )
 
-    # WordCloud
+    st.divider()    
+
+    # WordCloud all words
+    st.markdown("### 📊 Nuages de mots")
     st.image(
         IMAGES_DIR / "wordcloud.png",
         caption="Wordcloud – Corpus global",
         use_container_width=True
     )
 
+    st.divider()    
+
+    # WordCloud positive words
+    st.image(
+        IMAGES_DIR / "wordcloud_positive.png",
+        caption="Wordcloud – Positive reviews",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # WordCloud negative words
+    st.image(
+        IMAGES_DIR / "wordcloud_negative.png",
+        caption="Wordcloud – Negative reviews",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # Barplot trigrams positive words
+    st.markdown("### 📊 Trigrammes")
+    st.image(
+        IMAGES_DIR / "barplot_trigrams_positive.png",
+        caption="Top trigrams positive words",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # Barplot trigrams negative words
+    st.image(
+        IMAGES_DIR / "barplot_trigrams_negative.png",
+        caption="Top trigrams negative words",
+        use_container_width=True
+    )
 
 #############################################################
 if page == pages[1]:
-    st.write("### Preprocessing")
+    st.write("### Interprétabilité")
+
+    # SVM linear interpretability
+    st.markdown("### 🔍 Interprétabilité SVM Linear (coefficients)")
+    st.image(
+        IMAGES_DIR / "interpretability_svm.png",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # Random Forest interpretability
+    st.markdown("### 🔍 Interprétabilité Random Forest (RFE)")
+    st.image(
+        IMAGES_DIR / "interpretability_random_forest.png",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # XGBoost interpretability
+    st.markdown("### 🔍 Interprétabilité XGBoost (feature importance)")    
+    st.image(
+        IMAGES_DIR / "interpretability_xgboost.png",
+        use_container_width=True
+    )
+
+    st.divider()    
+
+    # DistilBERT interpretability
+    st.markdown("### 🔍 Interprétabilité DistillBERT (LIME)") 
+    st.image(
+        IMAGES_DIR / "interpretability_distilbert.png",
+        use_container_width=True
+    )
+
 
 
 #############################################################
