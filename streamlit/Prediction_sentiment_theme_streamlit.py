@@ -46,6 +46,20 @@ if page == pages[0]:
         use_container_width=True
     )
 
+    # Boxplot longueur des avis
+    st.image(
+        IMAGES_DIR / "boxplot_longueur_avis.png",
+        caption="Boxplot longueur des avis",
+        use_container_width=True
+    )
+
+    # Countplot longueur des avis
+    st.image(
+        IMAGES_DIR / "countplot_longueur_avis.png",
+        caption="Distribution longueur des avis",
+        use_container_width=True
+    )
+
     # WordCloud
     st.image(
         IMAGES_DIR / "wordcloud.png",
