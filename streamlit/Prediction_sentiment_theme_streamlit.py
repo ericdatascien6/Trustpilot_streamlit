@@ -6,12 +6,12 @@ from pathlib import Path
 
 st.title("Projet Amazon Reviews Trustpilot")
 st.sidebar.title("Sommaire")
-pages = ["Exploration", "Interprétabilité", "Modélisation"]
+pages = ["Exploration", "Interprétabilité", "Modélisation", "Saisir un avis"]
 page = st.sidebar.radio("Aller vers", pages)
 
 
 ##############################################################
-# Chemins robustes
+# Chemins
 BASE_DIR = Path(__file__).resolve().parent.parent
 STREAMLIT_DIR = BASE_DIR / "streamlit"
 IMAGES_DIR = STREAMLIT_DIR / "images"
@@ -39,7 +39,7 @@ df, df_negative, df_positive = load_dataset()
 ##############################################################
 if page == pages[0]:
     st.write("### Exploration")
-
+    
     # Répartition des sentiments
     st.markdown("### 📊 Equilibre de la target")
     st.image(
@@ -189,6 +189,135 @@ if page == pages[1]:
 #############################################################
 if page == pages[2]:
     st.write("### Modélisation")
+    st.markdown(f"###  Prédictions de quelques avis du dataset de test")
+
+    ###########################################################################
+    #   Prédiction du sentiment et du thème
+    ###########################################################################
+    import tensorflow as tf
+    import joblib
+    from transformers import (
+        AutoTokenizer,
+        TFAutoModelForSequenceClassification
+    )
+    from sentence_transformers import SentenceTransformer
+
+
+    # =========================
+    # Chargement des modèles
+    # =========================
+    MODELS_DIR = BASE_DIR / "models"
+
+    @st.cache_resource
+    def load_models():
+        # Sentence-BERT (chargé depuis Hugging Face)
+        sbert_model = SentenceTransformer(
+            "sentence-transformers/all-MiniLM-L6-v2"
+        )
+
+        # KMeans + labels (modèles entraînés)
+        kmeans = joblib.load(MODELS_DIR / "kmeans_topics.pkl")
+        cluster_labels = joblib.load(MODELS_DIR / "cluster_labels.pkl")
+
+        # DistilBERT sentiment (modèle HF standard)
+        sentiment_model_name = "distilbert-base-uncased-finetuned-sst-2-english"
+        sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_model_name)
+        sentiment_model = TFAutoModelForSequenceClassification.from_pretrained(
+            sentiment_model_name
+        )
+
+        return (
+            sbert_model,
+            kmeans,
+            cluster_labels,
+            sentiment_model,
+            sentiment_tokenizer
+        )
+
+
+    sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer = load_models()
+
+
+    # =========================
+    # Fonction de prédiction
+    # =========================
+    def predict_review(review_text: str):
+
+        # ---- Sentiment ----
+        enc = sentiment_tokenizer(
+            review_text,
+            truncation=True,
+            padding="max_length",
+            max_length=256,
+            return_tensors="tf"
+        )
+
+        outputs = sentiment_model(enc, training=False)
+        probs = tf.nn.softmax(outputs.logits, axis=1).numpy()[0]
+
+        sentiment = "Positive" if np.argmax(probs) == 1 else "Negative"
+
+        # ---- Topic ----
+        embedding = np.asarray(
+            sbert_model.encode([review_text])
+        )
+        cluster_id = int(kmeans.predict(embedding)[0])
+        theme = cluster_labels[cluster_id]
+
+        return {
+            "sentiment": sentiment,
+            "sentiment_score": float(np.max(probs)),
+            "theme": theme
+        }
+
+
+    # =========================
+    # Test de reviews du dataset
+    # =========================
+    random_state = 43
+
+    def safe_sample(df, n, random_state):
+        if len(df) == 0:
+            return pd.DataFrame(columns=df.columns)
+        return df.sample(
+            n=min(n, len(df)),
+            random_state=random_state
+        )
+
+    neg_samples = safe_sample(df_negative, 5, random_state)[["text", "label"]]
+    pos_samples = safe_sample(df_positive, 5, random_state)[["text", "label"]]
+
+    test_df = (
+        pd.concat([neg_samples, pos_samples])
+        .sample(frac=1, random_state=random_state)
+        .reset_index(drop=True)
+    )
+
+    label_mapping = {
+        1: "Negative",
+        2: "Positive"
+    }
+
+    for i, row in test_df.iterrows():
+        review_text = row["text"]
+        true_label = label_mapping[row["label"]]
+
+        result = predict_review(review_text)
+
+        st.markdown(f"### 📝 Avis {i+1}")
+        st.info(review_text)
+
+        st.write(f"→ Sentiment réel   : **{true_label}**")
+        st.write(
+            f"→ Sentiment prédit : **{result['sentiment']}** "
+            f"(score = {result['sentiment_score']:.3f})"
+        )
+        st.write(f"→ Thème prédit     : **{result['theme']}**")
+
+        st.divider()
+
+#############################################################
+if page == pages[3]:
 
     ###########################################################################
     #   Prédiction du sentiment et du thème
@@ -273,60 +402,26 @@ if page == pages[2]:
     # =========================
     # Test 1 review personnalisée
     # =========================
-    review = "The movie stopped working after two weeks and feels very cheap."
 
-    result = predict_review(review)
+    st.markdown("### ✍️ Saisissez un avis et validez avec (Ctrl/Entrée)")
 
-    st.markdown("### 📝 Avis rédigé")
-    st.success(review)
-    st.write("Thème :", result["theme"])
-    st.write(
-        f"Sentiment : {result['sentiment']}  ---   "
-        f"(Score = {result['sentiment_score']:.3f})"
+    review = st.text_area(
+        label="Avis utilisateur",
+        placeholder="Ex : The movie stopped working after two weeks and feels very cheap.",
+        height=250
     )
 
-
-    # =========================
-    # Test de reviews du dataset
-    # =========================
-    random_state = 43
-
-    def safe_sample(df, n, random_state):
-        if len(df) == 0:
-            return pd.DataFrame(columns=df.columns)
-        return df.sample(
-            n=min(n, len(df)),
-            random_state=random_state
-        )
-
-    neg_samples = safe_sample(df_negative, 5, random_state)[["text", "label"]]
-    pos_samples = safe_sample(df_positive, 5, random_state)[["text", "label"]]
-
-    test_df = (
-        pd.concat([neg_samples, pos_samples])
-        .sample(frac=1, random_state=random_state)
-        .reset_index(drop=True)
-    )
-
-    label_mapping = {
-        1: "Negative",
-        2: "Positive"
-    }
-
-    for i, row in test_df.iterrows():
-        review_text = row["text"]
-        true_label = label_mapping[row["label"]]
-
-        result = predict_review(review_text)
-
-        st.markdown(f"### 📝 Avis {i+1}")
-        st.info(review_text)
-
-        st.write(f"→ Sentiment réel   : **{true_label}**")
+    # On ne lance la prédiction que si quelque chose est saisi
+    if review.strip():
+        result = predict_review(review)
+        st.markdown("###  Prédictions :")
         st.write(
             f"→ Sentiment prédit : **{result['sentiment']}** "
             f"(score = {result['sentiment_score']:.3f})"
         )
         st.write(f"→ Thème prédit     : **{result['theme']}**")
+    else:
+        st.info("Veuillez saisir un avis pour lancer l'analyse.")
+    
 
-        st.divider()
+    
