@@ -3,8 +3,16 @@ import pandas as pd
 import numpy as np
 from pathlib import Path
 
+import tensorflow as tf
+import joblib
+from transformers import (
+    AutoTokenizer,
+    TFAutoModelForSequenceClassification
+)
+from sentence_transformers import SentenceTransformer
 
-st.title("Projet Amazon Reviews Trustpilot")
+
+st.title("Trustpilot Amazon Reviews")
 st.sidebar.title("Sommaire")
 pages = ["Exploration", "Interprétabilité", "Modélisation", "Saisir un avis"]
 page = st.sidebar.radio("Aller vers", pages)
@@ -16,6 +24,84 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 STREAMLIT_DIR = BASE_DIR / "streamlit"
 IMAGES_DIR = STREAMLIT_DIR / "images"
 
+##############################################################
+# =========================
+# Chargement des modèles
+# =========================
+MODELS_DIR = BASE_DIR / "models"
+
+@st.cache_resource
+def load_models():
+    # Sentence-BERT (chargé depuis Hugging Face)
+    sbert_model = SentenceTransformer(
+        "sentence-transformers/all-MiniLM-L6-v2"
+    )
+
+    # KMeans + labels (modèles entraînés)
+    kmeans = joblib.load(MODELS_DIR / "kmeans_topics.pkl")
+    cluster_labels = joblib.load(MODELS_DIR / "cluster_labels.pkl")
+
+    # DistilBERT sentiment (modèle HF standard)
+    sentiment_path = MODELS_DIR / "distilbert_sentiment"
+    sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_path)
+    sentiment_model = TFAutoModelForSequenceClassification.from_pretrained(
+        sentiment_path
+    )
+
+    return (
+        sbert_model,
+        kmeans,
+        cluster_labels,
+        sentiment_model,
+        sentiment_tokenizer
+    )
+
+sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer = load_models()
+
+# =========================
+# Fonction de prédiction
+# =========================
+def predict_review(review_text: str):
+
+    review_text = clean_review_text(review_text)
+    # ---- Sentiment ----
+    enc = sentiment_tokenizer(
+        review_text,
+        truncation=True,
+        padding="max_length",
+        max_length=270,
+        return_tensors="tf"
+    )
+
+    outputs = sentiment_model(enc, training=False)
+    probs = tf.nn.softmax(outputs.logits, axis=1).numpy()[0]
+
+    sentiment = "Positive" if np.argmax(probs) == 1 else "Negative"
+
+    # ---- Topic ----
+    embedding = np.asarray(
+        sbert_model.encode([review_text])
+    )
+    cluster_id = int(kmeans.predict(embedding)[0])
+    theme = cluster_labels[cluster_id]
+
+    return {
+        "sentiment": sentiment,
+        "sentiment_score": float(np.max(probs)),
+        "theme": theme
+    }
+
+# ==============================
+# Fonction de nettoyage de texte
+# ==============================
+import re
+
+def clean_review_text(text: str) -> str:
+    text = str(text)
+    text = re.sub(r"</?[a-zA-Z][^>]*>", " ", text)
+    text = re.sub(r"[^\x00-\x7F]+", " ", text)
+    text = re.sub(r"\s+", " ", text).strip()
+    return text
 
 ##############################################################
 # Chargement du dataset
@@ -36,7 +122,9 @@ def load_dataset():
 df, df_negative, df_positive = load_dataset()
 
 
-##############################################################
+#############################################################
+#  PAGE 0 - EXPLORATION
+#############################################################
 if page == pages[0]:
     st.write("### Exploration")
     
@@ -147,6 +235,8 @@ if page == pages[0]:
     )
 
 #############################################################
+#  PAGE 1 - Interprétabilité
+#############################################################
 if page == pages[1]:
     st.write("### Interprétabilité")
 
@@ -185,90 +275,12 @@ if page == pages[1]:
     )
 
 
-
+#############################################################
+#  PAGE 2 - Modélisation
 #############################################################
 if page == pages[2]:
     st.write("### Modélisation")
     st.markdown(f"###  Prédictions de quelques avis du dataset de test")
-
-    ###########################################################################
-    #   Prédiction du sentiment et du thème
-    ###########################################################################
-    import tensorflow as tf
-    import joblib
-    from transformers import (
-        AutoTokenizer,
-        TFAutoModelForSequenceClassification
-    )
-    from sentence_transformers import SentenceTransformer
-
-
-    # =========================
-    # Chargement des modèles
-    # =========================
-    MODELS_DIR = BASE_DIR / "models"
-
-    @st.cache_resource
-    def load_models():
-        # Sentence-BERT (chargé depuis Hugging Face)
-        sbert_model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2"
-        )
-
-        # KMeans + labels (modèles entraînés)
-        kmeans = joblib.load(MODELS_DIR / "kmeans_topics.pkl")
-        cluster_labels = joblib.load(MODELS_DIR / "cluster_labels.pkl")
-
-        # DistilBERT sentiment (modèle HF standard)
-        sentiment_model_name = "distilbert-base-uncased-finetuned-sst-2-english"
-        sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_model_name)
-        sentiment_model = TFAutoModelForSequenceClassification.from_pretrained(
-            sentiment_model_name
-        )
-
-        return (
-            sbert_model,
-            kmeans,
-            cluster_labels,
-            sentiment_model,
-            sentiment_tokenizer
-        )
-
-
-    sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer = load_models()
-
-
-    # =========================
-    # Fonction de prédiction
-    # =========================
-    def predict_review(review_text: str):
-
-        # ---- Sentiment ----
-        enc = sentiment_tokenizer(
-            review_text,
-            truncation=True,
-            padding="max_length",
-            max_length=256,
-            return_tensors="tf"
-        )
-
-        outputs = sentiment_model(enc, training=False)
-        probs = tf.nn.softmax(outputs.logits, axis=1).numpy()[0]
-
-        sentiment = "Positive" if np.argmax(probs) == 1 else "Negative"
-
-        # ---- Topic ----
-        embedding = np.asarray(
-            sbert_model.encode([review_text])
-        )
-        cluster_id = int(kmeans.predict(embedding)[0])
-        theme = cluster_labels[cluster_id]
-
-        return {
-            "sentiment": sentiment,
-            "sentiment_score": float(np.max(probs)),
-            "theme": theme
-        }
 
 
     # =========================
@@ -317,111 +329,44 @@ if page == pages[2]:
         st.divider()
 
 #############################################################
+#  PAGE 3 - Saisie Avis
+#############################################################
 if page == pages[3]:
-
-    ###########################################################################
-    #   Prédiction du sentiment et du thème
-    ###########################################################################
-    import tensorflow as tf
-    import joblib
-    from transformers import (
-        AutoTokenizer,
-        TFAutoModelForSequenceClassification
-    )
-    from sentence_transformers import SentenceTransformer
-
-
-    # =========================
-    # Chargement des modèles
-    # =========================
-    MODELS_DIR = BASE_DIR / "models"
-
-    @st.cache_resource
-    def load_models():
-        # Sentence-BERT (chargé depuis Hugging Face)
-        sbert_model = SentenceTransformer(
-            "sentence-transformers/all-MiniLM-L6-v2"
-        )
-
-        # KMeans + labels (modèles entraînés)
-        kmeans = joblib.load(MODELS_DIR / "kmeans_topics.pkl")
-        cluster_labels = joblib.load(MODELS_DIR / "cluster_labels.pkl")
-
-        # DistilBERT sentiment (modèle HF standard)
-        sentiment_model_name = "distilbert-base-uncased-finetuned-sst-2-english"
-        sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_model_name)
-        sentiment_model = TFAutoModelForSequenceClassification.from_pretrained(
-            sentiment_model_name
-        )
-
-        return (
-            sbert_model,
-            kmeans,
-            cluster_labels,
-            sentiment_model,
-            sentiment_tokenizer
-        )
-
-
-    sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer = load_models()
-
-
-    # =========================
-    # Fonction de prédiction
-    # =========================
-    def predict_review(review_text: str):
-
-        # ---- Sentiment ----
-        enc = sentiment_tokenizer(
-            review_text,
-            truncation=True,
-            padding="max_length",
-            max_length=256,
-            return_tensors="tf"
-        )
-
-        outputs = sentiment_model(enc, training=False)
-        probs = tf.nn.softmax(outputs.logits, axis=1).numpy()[0]
-
-        sentiment = "Positive" if np.argmax(probs) == 1 else "Negative"
-
-        # ---- Topic ----
-        embedding = np.asarray(
-            sbert_model.encode([review_text])
-        )
-        cluster_id = int(kmeans.predict(embedding)[0])
-        theme = cluster_labels[cluster_id]
-
-        return {
-            "sentiment": sentiment,
-            "sentiment_score": float(np.max(probs)),
-            "theme": theme
-        }
-
 
     # =========================
     # Test 1 review personnalisée
     # =========================
 
-    st.markdown("### ✍️ Saisissez un avis et validez avec (Ctrl/Entrée)")
+    st.markdown("### ✍️ Saisissez un avis")
 
     review = st.text_area(
-        label="Avis utilisateur",
+        label="(Ctrl+Entrée) pour valider",
         placeholder="Ex : The movie stopped working after two weeks and feels very cheap.",
-        height=250
+        height=200
     )
 
     # On ne lance la prédiction que si quelque chose est saisi
     if review.strip():
         result = predict_review(review)
-        st.markdown("###  Prédictions :")
-        st.write(
-            f"→ Sentiment prédit : **{result['sentiment']}** "
-            f"(score = {result['sentiment_score']:.3f})"
-        )
-        st.write(f"→ Thème prédit     : **{result['theme']}**")
-    else:
-        st.info("Veuillez saisir un avis pour lancer l'analyse.")
+
+        # titre centré
+        st.markdown("<h3 style='text-align: left; margin-left: 10%;'>🔮 Predictions :</h3>",unsafe_allow_html=True)
+
+        col1, col2 = st.columns([1, 2])
+
+        with col1:
+            st.markdown(
+                f"**Sentiment** : {result['sentiment']}  \n"
+                f"<span style='color:gray'>(score = {result['sentiment_score']:.3f})</span>",
+                unsafe_allow_html=True
+            )
+            # ici plus tard : st.image("smiley_positive.png") par ex.
+
+        with col2:
+            st.markdown(
+                f"**Thème** : {result['theme']}"
+            )
+            #  ici plus tard : st.image("logo_topic.png")
     
 
     
