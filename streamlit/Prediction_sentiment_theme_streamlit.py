@@ -346,27 +346,76 @@ if page == pages[3]:
     )
 
     # On ne lance la prédiction que si quelque chose est saisi
+    ICON_SIZE = 70
+    COL_RATIO = [1, 5]
+
     if review.strip():
         result = predict_review(review)
 
-        # titre centré
-        st.markdown("<h3 style='text-align: left; margin-left: 10%;'>🔮 Predictions :</h3>",unsafe_allow_html=True)
+        # Titre aligné à gauche
+        st.markdown(
+            "<h3 style='text-align: left; margin-left: 10px;'>🔮 Predictions</h3>",
+            unsafe_allow_html=True
+        )
 
-        col1, col2 = st.columns([1, 2])
+        THEME_ICONS = {
+            "Product performance & value perception": "product_performance.png",
+            "Entertainment and leisure products": "entertainment_leisure.png",
+            "Movies, documentaries and audiovisual content": "movies_audiovisual.png",
+            "Music albums & CDs": "music_albums.png",
+            "Books & literature": "books_literature.png",
+            "Technology & accessories": "technology_accessories.png",
+        }
 
-        with col1:
+        # =========================
+        # Ligne 1 — THEME
+        # =========================
+        col_icon, col_text = st.columns(COL_RATIO)
+
+        with col_icon:
+            st.image(IMAGES_DIR / THEME_ICONS[result["theme"]], width=ICON_SIZE)
+
+        with col_text:
             st.markdown(
-                f"**Sentiment** : {result['sentiment']}  \n"
-                f"<span style='color:gray'>(score = {result['sentiment_score']:.3f})</span>",
+                f"""
+                <div style="display: flex; align-items: center; height: 100%; font-size: 18px;">
+                    <strong>Theme :</strong>&nbsp;{result['theme']}
+                </div>
+                """,
                 unsafe_allow_html=True
             )
-            # ici plus tard : st.image("smiley_positive.png") par ex.
 
-        with col2:
-            st.markdown(
-                f"**Thème** : {result['theme']}"
+        # =========================
+        # Ligne 2 — SENTIMENT
+        # =========================
+        col_icon, col_text = st.columns(COL_RATIO)
+
+        with col_icon:
+            st.image(
+                IMAGES_DIR / (
+                    "positive_smiley.png"
+                    if result["sentiment"] == "Positive"
+                    else "negative_smiley.png"
+                ),
+                width=ICON_SIZE
             )
-            #  ici plus tard : st.image("logo_topic.png")
+
+        with col_text:
+            st.markdown(
+                f"""
+                <div style="display: flex; align-items: center; height: 100%; font-size: 18px;">
+                    <strong>Sentiment :</strong>&nbsp;{result['sentiment']}
+                    <span style="color:gray; font-size:14px; margin-left:6px;">
+                        (score = {result['sentiment_score']:.3f})
+                    </span>
+                </div>
+                """,
+                unsafe_allow_html=True
+            )
+
+    else:
+        st.info("Veuillez saisir un avis pour lancer l'analyse.")
+
     
 
     
