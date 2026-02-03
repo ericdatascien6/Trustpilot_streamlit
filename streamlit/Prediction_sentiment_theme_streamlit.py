@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from pathlib import Path
+
 import tensorflow as tf
 import joblib
 from transformers import (
@@ -11,7 +12,6 @@ from transformers import (
 from sentence_transformers import SentenceTransformer
 
 
-st.title("Trustpilot Amazon Reviews")
 st.sidebar.title("Sommaire")
 pages = ["Exploration", "Interprétabilité", "Modélisation", "Saisir un avis"]
 page = st.sidebar.radio("Aller vers", pages)
@@ -55,6 +55,7 @@ def load_models():
         sentiment_model,
         sentiment_tokenizer
     )
+
 
 sbert_model, kmeans, cluster_labels, sentiment_model, sentiment_tokenizer = load_models()
 
@@ -126,8 +127,12 @@ df, df_negative, df_positive = load_dataset()
 #  PAGE 0 - EXPLORATION
 #############################################################
 if page == pages[0]:
+
+    if page in ["Exploration", "Interprétabilité", "Modélisation"]:
+        st.title("Trustpilot Amazon Reviews")
+
     st.write("### Exploration")
-    
+
     # Répartition des sentiments
     st.markdown("### 📊 Equilibre de la target")
     st.image(
@@ -238,7 +243,9 @@ if page == pages[0]:
 #  PAGE 1 - Interprétabilité
 #############################################################
 if page == pages[1]:
-    st.write("### Interprétabilité")
+    
+    if page in ["Exploration", "Interprétabilité", "Modélisation"]:
+        st.title("Trustpilot Amazon Reviews")
 
     # SVM linear interpretability
     st.markdown("### 🔍 Interprétabilité SVM Linear (coefficients)")
@@ -279,9 +286,11 @@ if page == pages[1]:
 #  PAGE 2 - Modélisation
 #############################################################
 if page == pages[2]:
-    st.write("### Modélisation")
-    st.markdown(f"###  Prédictions de quelques avis du dataset de test")
 
+    if page in ["Exploration", "Interprétabilité", "Modélisation"]:
+        st.title("Trustpilot Amazon Reviews")
+
+    st.markdown(f"###  Prédictions de quelques avis du dataset de test")
 
     # =========================
     # Test de reviews du dataset
@@ -333,11 +342,13 @@ if page == pages[2]:
 #############################################################
 if page == pages[3]:
 
+    if page in ["Exploration", "Interprétabilité", "Modélisation"]:
+        st.title("Trustpilot Amazon Reviews")
     # =========================
     # Test 1 review personnalisée
     # =========================
 
-    st.markdown("### ✍️ Saisissez un avis")
+    st.markdown("## ✍️ Saisissez un avis")
 
     review = st.text_area(
         label="(Ctrl+Entrée) pour valider",
@@ -406,3 +417,8 @@ if page == pages[3]:
 
     else:
         st.info("Veuillez saisir un avis pour lancer l'analyse.")
+
+
+
+
+
