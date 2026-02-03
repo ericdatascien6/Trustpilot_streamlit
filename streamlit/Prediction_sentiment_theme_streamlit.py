@@ -41,10 +41,11 @@ def load_models():
     cluster_labels = joblib.load(MODELS_DIR / "cluster_labels.pkl")
 
     # DistilBERT sentiment (modèle HF standard)
-    sentiment_path = MODELS_DIR / "distilbert_sentiment"
-    sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_path)
+    sentiment_model_name = "distilbert-base-uncased-finetuned-sst-2-english"
+
+    sentiment_tokenizer = AutoTokenizer.from_pretrained(sentiment_model_name)
     sentiment_model = TFAutoModelForSequenceClassification.from_pretrained(
-        sentiment_path
+        sentiment_model_name
     )
 
     return (
