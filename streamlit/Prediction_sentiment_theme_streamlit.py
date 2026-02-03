@@ -346,13 +346,12 @@ if page == pages[3]:
     )
 
     # On ne lance la prédiction que si quelque chose est saisi
-    ICON_SIZE = 70
+    ICON_SIZE = 56
     COL_RATIO = [1, 5]
 
     if review.strip():
         result = predict_review(review)
 
-        # Titre aligné à gauche
         st.markdown(
             "<h3 style='text-align: left; margin-left: 10px;'>🔮 Predictions</h3>",
             unsafe_allow_html=True
@@ -370,25 +369,21 @@ if page == pages[3]:
         # =========================
         # Ligne 1 — THEME
         # =========================
-        col_icon, col_text = st.columns(COL_RATIO)
+        col_icon, col_text = st.columns(COL_RATIO, vertical_alignment="center")
 
         with col_icon:
             st.image(IMAGES_DIR / THEME_ICONS[result["theme"]], width=ICON_SIZE)
 
         with col_text:
             st.markdown(
-                f"""
-                <div style="display: flex; align-items: center; height: 100%; font-size: 18px;">
-                    <strong>Theme :</strong>&nbsp;{result['theme']}
-                </div>
-                """,
+                f"<strong>Theme :</strong> {result['theme']}",
                 unsafe_allow_html=True
             )
 
         # =========================
         # Ligne 2 — SENTIMENT
         # =========================
-        col_icon, col_text = st.columns(COL_RATIO)
+        col_icon, col_text = st.columns(COL_RATIO, vertical_alignment="center")
 
         with col_icon:
             st.image(
@@ -403,19 +398,11 @@ if page == pages[3]:
         with col_text:
             st.markdown(
                 f"""
-                <div style="display: flex; align-items: center; height: 100%; font-size: 18px;">
-                    <strong>Sentiment :</strong>&nbsp;{result['sentiment']}
-                    <span style="color:gray; font-size:14px; margin-left:6px;">
-                        (score = {result['sentiment_score']:.3f})
-                    </span>
-                </div>
+                <strong>Sentiment :</strong> {result['sentiment']}
+                <span style='color:gray;'>(score = {result['sentiment_score']:.3f})</span>
                 """,
                 unsafe_allow_html=True
             )
 
     else:
         st.info("Veuillez saisir un avis pour lancer l'analyse.")
-
-    
-
-    
