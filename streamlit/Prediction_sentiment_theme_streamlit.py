@@ -12,16 +12,23 @@ from transformers import (
 from sentence_transformers import SentenceTransformer
 
 
-st.sidebar.title("Sommaire")
-pages = ["Exploration", "Interprétabilité", "Modélisation", "Saisir un avis"]
-page = st.sidebar.radio("Aller vers", pages)
-
-
 ##############################################################
 # Chemins
 BASE_DIR = Path(__file__).resolve().parent.parent
 STREAMLIT_DIR = BASE_DIR / "streamlit"
 IMAGES_DIR = STREAMLIT_DIR / "images"
+
+##############################################################
+# Bandeau lateral gauche
+
+st.sidebar.title("MENU")
+pages = ["Exploration", "Interprétabilité", "Modélisation", "Saisir un avis"]
+page = st.sidebar.radio("Aller vers", pages)
+
+st.sidebar.image(
+    IMAGES_DIR / "liora_logo.png",
+    use_container_width=50
+)
 
 ##############################################################
 # =========================
@@ -110,7 +117,7 @@ def clean_review_text(text: str) -> str:
 @st.cache_data
 def load_dataset():
     df = pd.read_csv(
-        STREAMLIT_DIR / "train.csv",
+        STREAMLIT_DIR / "test.csv",
         header=None,
         names=["label", "title", "text"]
     )
@@ -163,25 +170,7 @@ if page == pages[0]:
     st.image(
         IMAGES_DIR / "countplot_longueur_avis.png",
         use_container_width=True
-    )
-
-    st.divider()    
-
-    # Countplot longueur des avis positifs
-    st.image(
-        IMAGES_DIR / "countplot_longueur_avis_positive.png",
-        caption="Distribution longueur des avis positifs",
-        use_container_width=True
-    )
-
-    st.divider()    
-
-    # Countplot longueur des avis négatifs
-    st.image(
-        IMAGES_DIR / "countplot_longueur_avis_negative.png",
-        caption="Distribution longueur des avis négatifs",
-        use_container_width=True
-    )
+    )   
 
     st.divider()    
 
@@ -192,19 +181,10 @@ if page == pages[0]:
         use_container_width=True
     )
 
-    st.divider()    
-
-    # WordCloud all words
-    st.markdown("### 📊 Nuages de mots")
-    st.image(
-        IMAGES_DIR / "wordcloud.png",
-        caption="Wordcloud – Corpus global",
-        use_container_width=True
-    )
-
-    st.divider()    
+    st.divider()        
 
     # WordCloud positive words
+    st.markdown("### ☁️ Nuages de mots")
     st.image(
         IMAGES_DIR / "wordcloud_positive.png",
         caption="Wordcloud – Positive reviews",
@@ -248,7 +228,7 @@ if page == pages[1]:
         st.title("Trustpilot Amazon Reviews")
 
     # SVM linear interpretability
-    st.markdown("### 🔍 Interprétabilité SVM Linear (coefficients)")
+    st.markdown("### 📐 Interprétabilité SVM Linear (coefficients)")
     st.image(
         IMAGES_DIR / "interpretability_svm.png",
         use_container_width=True
@@ -257,7 +237,7 @@ if page == pages[1]:
     st.divider()    
 
     # Random Forest interpretability
-    st.markdown("### 🔍 Interprétabilité Random Forest (RFE)")
+    st.markdown("### 📐 Interprétabilité Random Forest (RFE)")
     st.image(
         IMAGES_DIR / "interpretability_random_forest.png",
         use_container_width=True
@@ -266,7 +246,7 @@ if page == pages[1]:
     st.divider()    
 
     # XGBoost interpretability
-    st.markdown("### 🔍 Interprétabilité XGBoost (feature importance)")    
+    st.markdown("### 📐 Interprétabilité XGBoost (feature importance)")    
     st.image(
         IMAGES_DIR / "interpretability_xgboost.png",
         use_container_width=True
@@ -275,7 +255,7 @@ if page == pages[1]:
     st.divider()    
 
     # DistilBERT interpretability
-    st.markdown("### 🔍 Interprétabilité DistillBERT (LIME)") 
+    st.markdown("### 📐 Interprétabilité DistillBERT (LIME)") 
     st.image(
         IMAGES_DIR / "interpretability_distilbert.png",
         use_container_width=True
@@ -290,7 +270,7 @@ if page == pages[2]:
     if page in ["Exploration", "Interprétabilité", "Modélisation"]:
         st.title("Trustpilot Amazon Reviews")
 
-    st.markdown(f"###  Prédictions de quelques avis du dataset de test")
+    st.markdown(f"###  🔮 Prédictions de quelques avis du dataset de test")
 
     # =========================
     # Test de reviews du dataset
@@ -328,7 +308,7 @@ if page == pages[2]:
         st.markdown(f"### 📝 Avis {i+1}")
         st.info(review_text)
 
-        st.write(f"→ Sentiment réel   : **{true_label}**")
+        st.write(f"→  Sentiment réel   : **{true_label}**")
         st.write(
             f"→ Sentiment prédit : **{result['sentiment']}** "
             f"(score = {result['sentiment_score']:.3f})"
