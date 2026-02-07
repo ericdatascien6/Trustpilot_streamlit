@@ -228,7 +228,7 @@ if page == pages[1]:
         st.title("Trustpilot Amazon Reviews")
 
     # SVM linear interpretability
-    st.markdown("### 📐 Interprétabilité SVM Linear (coefficients)")
+    st.markdown("### 📐 SVM linéaire - coefficients TF-IDF")
     st.image(
         IMAGES_DIR / "interpretability_svm.png",
         use_container_width=True
@@ -237,7 +237,7 @@ if page == pages[1]:
     st.divider()    
 
     # Random Forest interpretability
-    st.markdown("### 📐 Interprétabilité Random Forest (RFE)")
+    st.markdown("### 📐 Random Forest - sélection de variables (RFE)")
     st.image(
         IMAGES_DIR / "interpretability_random_forest.png",
         use_container_width=True
@@ -246,7 +246,7 @@ if page == pages[1]:
     st.divider()    
 
     # XGBoost interpretability
-    st.markdown("### 📐 Interprétabilité XGBoost (feature importance)")    
+    st.markdown("### 📐 Interprétabilité XGBoost - Feature importance")    
     st.image(
         IMAGES_DIR / "interpretability_xgboost.png",
         use_container_width=True
@@ -255,7 +255,7 @@ if page == pages[1]:
     st.divider()    
 
     # DistilBERT interpretability
-    st.markdown("### 📐 Interprétabilité DistillBERT (LIME)") 
+    st.markdown("### 📐 Interprétabilité DistillBERT - locale avec LIME") 
     st.image(
         IMAGES_DIR / "interpretability_distilbert.png",
         use_container_width=True
@@ -275,7 +275,7 @@ if page == pages[2]:
     # =========================
     # Test de reviews du dataset
     # =========================
-    random_state = 43
+    random_state = 51
 
     def safe_sample(df, n, random_state):
         if len(df) == 0:
@@ -285,8 +285,8 @@ if page == pages[2]:
             random_state=random_state
         )
 
-    neg_samples = safe_sample(df_negative, 5, random_state)[["text", "label"]]
-    pos_samples = safe_sample(df_positive, 5, random_state)[["text", "label"]]
+    neg_samples = safe_sample(df_negative, 2, random_state)[["text", "label"]]
+    pos_samples = safe_sample(df_positive, 1, random_state)[["text", "label"]]
 
     test_df = (
         pd.concat([neg_samples, pos_samples])
